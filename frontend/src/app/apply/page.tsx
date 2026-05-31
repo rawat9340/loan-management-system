@@ -482,37 +482,34 @@ export default function ApplyPage() {
   const router = useRouter();
   const { currentStep, formData, nextStep, prevStep, updateFormData, isSubmitting, setSubmitting, resetApplication } =
     useLoanStore();
-  const [profileSaved, setProfileSaved] = useState(false);
 
-  const handleStep1 = async (data: PersonalDetailsFormData) => {
+
+  const handleStep1 = (data: PersonalDetailsFormData) => {
+    // Just save to local state — don't hit the backend yet.
+    // The backend profile endpoint requires employmentType too,
+    // so we save personal + employment together at the end of Step 2.
     updateFormData(data);
-    // Save profile to backend
+    nextStep();
+  };
+
+  const handleStep2 = async (data: EmploymentFormData) => {
+    updateFormData(data);
+    // Now we have both personal + employment — send everything to the backend together
     try {
-      const res = await api.post('/borrower/profile', data);
+      const mergedData = { ...formData, ...data };
+      const res = await api.post('/borrower/profile', mergedData);
       setBorrowerProfile(res.data.data.borrower);
-      setProfileSaved(true);
+      const breResult = res.data.data.breResult;
+      if (breResult && !breResult.passed) {
+        toast.warning(`⚠️ BRE Notice: ${breResult.reasons?.[0] || 'You may not be eligible'}`);
+      } else if (breResult?.passed) {
+        toast.success('✅ Eligibility check passed!');
+      }
       nextStep();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; errors?: Array<{ msg: string }> } } };
       const msg = error?.response?.data?.errors?.[0]?.msg || error?.response?.data?.message || 'Failed to save profile';
       toast.error(msg);
-    }
-  };
-
-  const handleStep2 = async (data: EmploymentFormData) => {
-    updateFormData(data);
-    // Update profile with employment data
-    try {
-      const mergedData = { ...formData, ...data };
-      const res = await api.post('/borrower/profile', mergedData);
-      setBorrowerProfile(res.data.data.borrower);
-      if (res.data.data.breResult && !res.data.data.breResult.passed) {
-        toast.warning(`⚠️ BRE Notice: ${res.data.data.breResult.reasons[0]}`);
-      }
-      nextStep();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error?.response?.data?.message || 'Failed to save employment info');
     }
   };
 

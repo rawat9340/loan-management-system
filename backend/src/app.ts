@@ -1,8 +1,11 @@
 import 'express-async-errors';
+import dotenv from 'dotenv';
+// Load env vars FIRST before any other imports that might use them
+dotenv.config();
+
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import { connectDB } from './config/db';
 
 // Routes
@@ -10,8 +13,6 @@ import authRoutes from './routes/auth.routes';
 import borrowerRoutes from './routes/borrower.routes';
 import loanRoutes from './routes/loan.routes';
 import paymentRoutes from './routes/payment.routes';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;

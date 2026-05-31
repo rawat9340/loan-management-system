@@ -17,6 +17,20 @@ import {
 
 const router = Router();
 
+// ⚠️ IMPORTANT: Static routes MUST come before dynamic /:id routes
+// to prevent Express matching "admin" or "my-loans" as a loan ID
+
+// ADMIN: Dashboard stats — must be before /:id routes
+router.get(
+  '/admin/stats',
+  authenticate,
+  requireRole('ADMIN'),
+  getDashboardStats
+);
+
+// BORROWER: My loans — must be before /:id routes
+router.get('/my-loans', authenticate, requireRole('BORROWER'), getMyLoans);
+
 // BORROWER: Apply
 router.post(
   '/apply',
@@ -26,9 +40,6 @@ router.post(
   applyForLoan
 );
 
-// BORROWER: My loans
-router.get('/my-loans', authenticate, requireRole('BORROWER'), getMyLoans);
-
 // All ops roles: Get loans (filtered by role)
 router.get(
   '/',
@@ -37,7 +48,7 @@ router.get(
   getLoans
 );
 
-// SANCTION: Approve
+// SANCTION: Approve — dynamic /:id routes below
 router.put(
   '/:id/approve',
   authenticate,
@@ -60,14 +71,6 @@ router.put(
   authenticate,
   requireRole('DISBURSEMENT', 'ADMIN'),
   disburseLoan
-);
-
-// ADMIN: Dashboard stats
-router.get(
-  '/admin/stats',
-  authenticate,
-  requireRole('ADMIN'),
-  getDashboardStats
 );
 
 export default router;
